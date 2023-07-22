@@ -20,39 +20,37 @@ public class OutboundTest {
     private static String sb = "/usr/local/freeswitch/sounds/en/us/callie/ivr/8000/";
     String prompt = sb + "ivr-please_enter_extension_followed_by_pound.wav";
     String failed = sb + "ivr-that_was_an_invalid_entry.wav";
+
     public static void main(String[] args) {
         new OutboundTest();
     }
 
     public OutboundTest() {
         try {
-
-            final Client inboudClient = new Client();
-            inboudClient.connect(new InetSocketAddress("localhost", 8021), "ClueCon", 10);
-            inboudClient.addEventListener((ctx, event) -> logger.info("INBOUND onEslEvent: {}", event.getEventName()));
+            logger.info("-------------");
+//            final Client inboudClient = new Client();
+//            inboudClient.connect(new InetSocketAddress("192.168.2.178", 8021), "ClueCon", 10);
+//            inboudClient.addEventListener((ctx, event) -> logger.info("INBOUND onEslEvent: {}", event.getEventName()));
 
             final SocketClient outboundServer = new SocketClient(
-                    new InetSocketAddress("localhost", 8084),
+                    new InetSocketAddress("192.168.2.230", 8084),
                     () -> new IClientHandler() {
                         @Override
-                        public void onConnect(Context context,
-                                EslEvent eslEvent) {
+                        public void onConnect(Context context, EslEvent eslEvent) {
 
 
-                            logger.warn(nameMapToString(eslEvent
-                                    .getMessageHeaders(), eslEvent.getEventBodyLines()));
+                            logger.warn(nameMapToString(eslEvent.getMessageHeaders(), eslEvent.getEventBodyLines()));
 
-                            String uuid = eslEvent.getEventHeaders()
-                                    .get("unique-id");
+                            String uuid = eslEvent.getEventHeaders().get("unique-id");
 
-                            logger.warn(
-                                    "Creating execute app for uuid {}",
-                                    uuid);
+                            logger.warn("Creating execute app for uuid {}", uuid);
 
                             Execute exe = new Execute(context, uuid);
 
                             try {
-
+                                logger.info("berofe preAnswer");
+                                exe.preAnswer();
+                                logger.info("after preAnswer");
                                 exe.answer();
 
                                 String digits = exe.playAndGetDigits(3,
@@ -63,16 +61,13 @@ public class OutboundTest {
 
 
                             } catch (ExecuteException e) {
-                                logger.error(
-                                        "Could not prompt for digits",
-                                        e);
+                                logger.error("Could not prompt for digits", e);
 
                             } finally {
                                 try {
                                     exe.hangup(null);
                                 } catch (ExecuteException e) {
-                                    logger.error(
-                                            "Could not hangup",e);
+                                    logger.error("Could not hangup", e);
                                 }
                             }
 
@@ -80,12 +75,13 @@ public class OutboundTest {
 
                         @Override
                         public void onEslEvent(Context ctx,
-                                EslEvent event) {
+                                               EslEvent event) {
                             logger.info("OUTBOUND onEslEvent: {}",
                                     event.getEventName());
 
                         }
                     });
+            logger.info("start");
             outboundServer.startAsync();
 
         } catch (Throwable t) {
@@ -94,10 +90,10 @@ public class OutboundTest {
     }
 
     public static String nameMapToString(Map<Name, String> map,
-            List<String> lines) {
+                                         List<String> lines) {
         StringBuilder sb = new StringBuilder("\nHeaders:\n");
         for (Name key : map.keySet()) {
-            if(key == null)
+            if (key == null)
                 continue;
             sb.append(key.toString());
             sb.append("\n\t\t\t\t = \t ");
@@ -111,6 +107,6 @@ public class OutboundTest {
                 sb.append("\n");
             }
         }
-        return sb.toString();
+        return "";
     }
 }
