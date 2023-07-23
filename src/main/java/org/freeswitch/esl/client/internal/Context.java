@@ -20,8 +20,8 @@ public class Context implements IModEslApi {
 	private final Channel channel;
 
 	public Context(Channel channel, AbstractEslClientHandler clientHandler) {
-		this.handler = clientHandler;
 		this.channel = channel;
+		this.handler = clientHandler;
 	}
 
 	@Override
