@@ -1,9 +1,12 @@
 package org.freeswitch.esl.client;
 
 import com.google.common.base.Throwables;
+import org.freeswitch.esl.client.dptools.ExecuteException;
 import org.freeswitch.esl.client.inbound.Client;
 import org.freeswitch.esl.client.internal.IModEslApi;
 import org.freeswitch.esl.client.internal.IModEslApi.EventFormat;
+import org.freeswitch.esl.client.transport.CommandResponse;
+import org.freeswitch.esl.client.transport.SendMsg;
 import org.freeswitch.esl.client.transport.message.EslMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +40,10 @@ public class ClientExample {
 
     private static void test(Client client) {
         // 呼叫1002-播放语音
+        sendExeMesg("status", "", client);
 //        client.sendApiCommand("originate", "{ignore_early_media=true}user/601 &playback(/tmp/1.wav)");
 //        client.sendBackgroundApiCommand("originate", "{ignore_early_media=true}user/601 &playback(/tmp/1.wav)");
-
-          client.sendBackgroundApiCommand("status", "");
+//        client.sendBackgroundApiCommand("status", "");
 //        logger.info("api status return :{}",message.getBodyLines());
         // 呼叫手机-执行lua脚本
         // client.sendSyncApiCommand("originate", "{ignore_early_media=true}sofia/gateway/fs_sg/18621730742 &lua(welcome.lua)");
@@ -49,4 +52,24 @@ public class ClientExample {
 
 //            client.close();
     }
+
+    private static CommandResponse sendExeMesg(String app, String args, Client client) {
+        SendMsg msg = new SendMsg();
+        msg.addCallCommand("execute");
+        msg.addExecuteAppName(app);
+        if (nn(args))
+            msg.addExecuteAppArg(args);
+        CommandResponse resp = client.sendMessage(msg);
+        if (!resp.isOk())
+            logger.error(resp.getReplyText());
+
+
+        return resp;
+    }
+
+
+    private static boolean nn(Object obj) {
+        return obj != null;
+    }
+
 }

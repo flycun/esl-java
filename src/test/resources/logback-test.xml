@@ -24,7 +24,7 @@
     </encoder>
   </appender>
 
-  <logger name="org.freeswitch.esl.client.outbound.example">
+  <logger name="org.freeswitch.esl.client.outbound">
     <level value="debug" />
   </logger>
   <logger name="org.freeswitch.esl.client.inbound">

@@ -22,8 +22,12 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.netty.channel.socket.nio.NioChannelOption;
 
 import java.net.SocketAddress;
 
@@ -56,14 +60,27 @@ public class SocketClient extends AbstractService {
 
 	@Override
 	protected void doStart() {
-		final ServerBootstrap bootstrap = new ServerBootstrap()
-				.group(bossGroup, workerGroup)
-				.channel(NioServerSocketChannel.class)
-				.childHandler(new OutboundChannelInitializer(clientHandlerFactory))
-				.childOption(ChannelOption.TCP_NODELAY, true)
-				.childOption(ChannelOption.SO_KEEPALIVE, true);
+//		final ServerBootstrap bootstrap = new ServerBootstrap()
+//				.channel(NioServerSocketChannel.class)
+//				.childHandler(new LoggingHandler(LogLevel.INFO))
+//				.group(bossGroup, workerGroup)
+//				.childHandler(new OutboundChannelInitializer(clientHandlerFactory))
+//				.childOption(ChannelOption.TCP_NODELAY, true)
+//				.childOption(ChannelOption.SO_KEEPALIVE, true);
+		ServerBootstrap serverBootstrap = new ServerBootstrap();
 
-		serverChannel = bootstrap.bind(bindAddress).syncUninterruptibly().channel();
+		serverBootstrap.channel(NioServerSocketChannel.class);
+		serverBootstrap.option(NioChannelOption.SO_BACKLOG, 1024);
+		serverBootstrap.childOption(NioChannelOption.TCP_NODELAY, true);
+		serverBootstrap.handler(new LoggingHandler(LogLevel.INFO));
+
+		//thread
+		NioEventLoopGroup bossGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("boss"));
+		NioEventLoopGroup workGroup = new NioEventLoopGroup(0, new DefaultThreadFactory("worker"));
+//		UnorderedThreadPoolEventExecutor businessGroup = new UnorderedThreadPoolEventExecutor(10, new DefaultThreadFactory("business"));
+		serverBootstrap.group(bossGroup, workGroup);
+		serverBootstrap.childHandler(new OutboundChannelInitializer(clientHandlerFactory));
+		serverChannel = serverBootstrap.bind(bindAddress).syncUninterruptibly().channel();
 		notifyStarted();
 		log.info("SocketClient waiting for connections on [{}] ...", bindAddress);
 	}

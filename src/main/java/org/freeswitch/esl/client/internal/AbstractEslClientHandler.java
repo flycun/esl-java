@@ -203,6 +203,7 @@ public abstract class AbstractEslClientHandler extends SimpleChannelInboundHandl
             apiCalls.add(future);
             channel.write(sb.toString());
             channel.flush();
+            log.info("--> sendApiMultiLineCommand : {}",sb.toString());
         } finally {
             syncLock.unlock();
         }

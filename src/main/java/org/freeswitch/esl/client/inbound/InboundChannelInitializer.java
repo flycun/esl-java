@@ -5,6 +5,8 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import org.freeswitch.esl.client.transport.message.EslFrameDecoder;
 
 /**
@@ -28,5 +30,6 @@ class InboundChannelInitializer extends ChannelInitializer<SocketChannel> {
         // now the inbound client logic
         pipeline.addLast("clientHandler", handler);
         pipeline.addLast("encoder", new StringEncoder());
+        pipeline.addLast(new LoggingHandler(LogLevel.INFO));
     }
 }
