@@ -39,10 +39,12 @@ class OutboundClientHandler extends AbstractEslClientHandler {
 
 	private final IClientHandler clientHandler;
 	private final ExecutorService callbackExecutor;
+	private final ExecutorService onConnectExecutor;
 
-	public OutboundClientHandler(IClientHandler clientHandler, ExecutorService callbackExecutor) {
+	public OutboundClientHandler(IClientHandler clientHandler, ExecutorService callbackExecutor, ExecutorService onConnectExecutor) {
 		this.clientHandler = clientHandler;
 		this.callbackExecutor = callbackExecutor;
+		this.onConnectExecutor = onConnectExecutor;
 	}
 
 	@Override
@@ -53,9 +55,11 @@ class OutboundClientHandler extends AbstractEslClientHandler {
 		log.debug("Received new connection from server, sending connect message");
 
 		sendApiSingleLineCommand(ctx.channel(), "connect")
-				.thenAccept(response -> clientHandler.onConnect(
+				.thenAccept(response ->
+					onConnectExecutor.execute(() -> clientHandler.onConnect(
 						new Context(ctx.channel(), OutboundClientHandler.this),
 						new EslEvent(response, true)))
+				)
 				.exceptionally(throwable -> {
 					ctx.channel().close();
 					handleDisconnectionNotice();
