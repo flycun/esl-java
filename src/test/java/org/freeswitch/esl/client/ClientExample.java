@@ -1,13 +1,10 @@
 package org.freeswitch.esl.client;
 
-import com.google.common.base.Throwables;
-import org.freeswitch.esl.client.dptools.ExecuteException;
 import org.freeswitch.esl.client.inbound.Client;
-import org.freeswitch.esl.client.internal.IModEslApi;
+import org.freeswitch.esl.client.inbound.IEslEventListener;
+import org.freeswitch.esl.client.internal.Context;
 import org.freeswitch.esl.client.internal.IModEslApi.EventFormat;
-import org.freeswitch.esl.client.transport.CommandResponse;
-import org.freeswitch.esl.client.transport.SendMsg;
-import org.freeswitch.esl.client.transport.message.EslMessage;
+import org.freeswitch.esl.client.transport.event.EslEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,11 +24,12 @@ public class ClientExample {
 
             Client client = new Client();
 
-            client.addEventListener((ctx, event) -> logger.info("接收到事件: {}", event.getEventName()));
+//            client.addEventListener((ctx, event) -> logger.info("接收到事件: {}", event.getEventName()));
+            client.addEventListener(new MyIEslEventListener());
 
             client.connect(new InetSocketAddress("192.168.2.178", 8021), password, 10);
-            client.setEventSubscriptions(EventFormat.PLAIN, "CHANNEL_ANSWER");
-            test(client);
+            client.setEventSubscriptions(EventFormat.PLAIN, "CHANNEL_CREATE CHANNEL_HANGUP CHANNEL_HANGUP_COMPLETE CHANNEL_DESTROY CUSTOM callcenter::info");
+//            test(client);
 
         } catch (Throwable t) {
             t.printStackTrace();
@@ -40,7 +38,7 @@ public class ClientExample {
 
     private static void test(Client client) {
         // 呼叫1002-播放语音
-        sendExeMesg("status", "", client);
+
 //        client.sendApiCommand("originate", "{ignore_early_media=true}user/601 &playback(/tmp/1.wav)");
 //        client.sendBackgroundApiCommand("originate", "{ignore_early_media=true}user/601 &playback(/tmp/1.wav)");
 //        client.sendBackgroundApiCommand("status", "");
@@ -53,23 +51,16 @@ public class ClientExample {
 //            client.close();
     }
 
-    private static CommandResponse sendExeMesg(String app, String args, Client client) {
-        SendMsg msg = new SendMsg();
-        msg.addCallCommand("execute");
-        msg.addExecuteAppName(app);
-        if (nn(args))
-            msg.addExecuteAppArg(args);
-        CommandResponse resp = client.sendMessage(msg);
-        if (!resp.isOk())
-            logger.error(resp.getReplyText());
 
-
-        return resp;
+    static class MyIEslEventListener implements IEslEventListener {
+        @Override
+        public void onEslEvent(Context ctx, EslEvent event) {
+            String eventName = event.getEventName();
+            if (eventName.equalsIgnoreCase("CUSTOM") || eventName.contains("HANGUP_COMPLETE")) {
+                String ani = event.getEventHeaders().get("Caller-ANI");
+                String myvar = event.getEventHeaders().get("MY-VAR-1");
+                System.out.println("INBOUND=> eventName: " + event.getEventName() + ", ani = " + ani + ", myvar = " + myvar);
+            }
+        }
     }
-
-
-    private static boolean nn(Object obj) {
-        return obj != null;
-    }
-
 }
